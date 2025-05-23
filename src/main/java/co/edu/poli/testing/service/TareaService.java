@@ -9,7 +9,6 @@ import java.util.Optional;
 
 @Service
 public class TareaService {
-
     private final TareaRepository tareaRepository;
 
     public TareaService(TareaRepository tareaRepository) {

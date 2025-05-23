@@ -1,9 +1,9 @@
 package co.edu.poli.testing.repository;
 
 import co.edu.poli.testing.model.Tarea;
+import java.util.*;
 
 import org.springframework.stereotype.Repository;
-import java.util.*;
 
 @Repository
 public class TareaRepository {
