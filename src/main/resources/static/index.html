@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>To-Do List App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .sin-hacer { background-color: #fff3cd; }
+        .en-curso { background-color: #d1ecf1; }
+        .finalizada { background-color: #d4edda; }
+        button.filtro {
+            margin-right: 10px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        button.filtro.activo {
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<h1>Gestor de Tareas</h1>
+
+<h3>Nueva Tarea</h3>
+<form id="formTarea">
+    <input type="text" id="titulo" placeholder="Título" required>
+    <input type="text" id="descripcion" placeholder="Descripción">
+    <select id="prioridad">
+        <option>Alta</option>
+        <option>Media</option>
+        <option>Baja</option>
+    </select>
+    <button type="submit">Agregar</button>
+</form>
+
+<h3>Filtrar Tareas</h3>
+<div id="filtros">
+    <button class="filtro activo" data-estado="Todas">Todas</button>
+    <button class="filtro" data-estado="Sin hacer">Sin hacer</button>
+    <button class="filtro" data-estado="En curso">En curso</button>
+    <button class="filtro" data-estado="Finalizada">Finalizadas</button>
+</div>
+
+<h3>Lista de Tareas</h3>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Descripción</th>
+        <th>Prioridad</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+    </tr>
+    </thead>
+    <tbody id="tareasBody"></tbody>
+</table>
+
+<script>
+    const apiUrl = '/api/tareas';
+    let tareasCache = [];  // Cache de tareas para filtrar localmente
+    let estadoFiltro = 'Todas';
+
+    document.getElementById('formTarea').addEventListener('submit', async e => {
+        e.preventDefault();
+        const data = {
+            titulo: document.getElementById('titulo').value,
+            descripcion: document.getElementById('descripcion').value,
+            prioridad: document.getElementById('prioridad').value,
+            estado: 'Sin hacer'  // Por defecto al crear la tarea
+        };
+        await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        await cargarTareas();
+        e.target.reset();
+    });
+
+    document.getElementById('filtros').addEventListener('click', e => {
+        if(e.target.classList.contains('filtro')) {
+            estadoFiltro = e.target.getAttribute('data-estado');
+            document.querySelectorAll('#filtros .filtro').forEach(btn => btn.classList.remove('activo'));
+            e.target.classList.add('activo');
+            mostrarTareasFiltradas();
+        }
+    });
+
+    async function cargarTareas() {
+        const res = await fetch(apiUrl);
+        tareasCache = await res.json();
+        mostrarTareasFiltradas();
+    }
+
+    function mostrarTareasFiltradas() {
+        const tbody = document.getElementById('tareasBody');
+        tbody.innerHTML = '';
+
+        let tareasFiltradas = tareasCache;
+        if (estadoFiltro !== 'Todas') {
+            tareasFiltradas = tareasCache.filter(t => t.estado === estadoFiltro);
+        }
+
+        tareasFiltradas.forEach(t => {
+            const fila = document.createElement('tr');
+            fila.className = t.estado.toLowerCase().replace(" ", "\\ ");
+            fila.innerHTML = `
+                <td>${t.id}</td>
+                <td>${t.titulo}</td>
+                <td>${t.descripcion}</td>
+                <td>${t.prioridad}</td>
+                <td>${t.estado}</td>
+                <td>
+                    ${t.estado !== 'Finalizada' ? `
+                        <button onclick="cambiarEstado(${t.id}, 'En curso')">En curso</button>
+                        <button onclick="cambiarEstado(${t.id}, 'Finalizada')">Finalizada</button>
+                    ` : ''}
+                    <button onclick="eliminarTarea(${t.id})">Eliminar</button>
+                </td>
+            `;
+            tbody.appendChild(fila);
+        });
+    }
+
+    async function cambiarEstado(id, estado) {
+        await fetch(`${apiUrl}/${id}/estado?estado=${estado}`, { method: 'PUT' });
+        await cargarTareas();
+    }
+
+    async function eliminarTarea(id) {
+        await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+        await cargarTareas();
+    }
+
+    cargarTareas();
+</script>
+</body>
+</html>

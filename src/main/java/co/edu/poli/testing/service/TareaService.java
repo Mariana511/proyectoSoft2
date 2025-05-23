@@ -16,7 +16,7 @@ public class TareaService {
     }
 
     public Tarea crearTarea(Tarea tarea) {
-        tarea.setEstado("Pendiente");
+        tarea.setEstado("Sin hacer");
         return tareaRepository.guardar(tarea);
     }
 
